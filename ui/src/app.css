@@ -1,0 +1,15 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+:root {
+    @apply transition-colors duration-200;
+}
+
+html.dark {
+    @apply bg-gray-900;
+}
+
+html.dark body {
+    @apply bg-gray-900 text-white;
+}
