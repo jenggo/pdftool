@@ -47,7 +47,7 @@ func New() *cron.Cron {
 			}
 
 			lastmodified := object.LastModified.Local()
-			umur := math.Round(time.Since(lastmodified).Hours())
+			umur := math.Round(time.Since(lastmodified).Hours() / 24)
 
 			if umur > 1 {
 				if err := s3.RemoveObject(ctx, types.Config.S3.Bucket, object.Key, minio.RemoveObjectOptions{ForceDelete: true}); err != nil {

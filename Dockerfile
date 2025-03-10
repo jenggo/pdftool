@@ -6,6 +6,7 @@ COPY ui/package.json ui/bun.lock ./
 RUN bun install
 
 COPY ui/ ./
+RUN bun run check
 RUN bun run build
 
 FROM golang:alpine AS backend

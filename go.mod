@@ -9,7 +9,7 @@ require (
 	github.com/gofiber/storage/minio v0.2.5
 	github.com/gosimple/slug v1.15.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/jenggo/gofiber-swagger v0.0.0-20250309183806-2030c6f4fd4c
+	github.com/jenggo/gofiber-swagger v0.0.0-20250309185435-39e66711ec21
 	github.com/minio/minio-go/v7 v7.0.87
 	github.com/pdfcpu/pdfcpu v0.9.1
 	github.com/robfig/cron/v3 v3.0.1

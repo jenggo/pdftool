@@ -41,7 +41,7 @@
 </script>
 
 <div
-    class="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8"
+    class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8"
 >
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
         <div

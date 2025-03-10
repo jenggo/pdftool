@@ -3,6 +3,8 @@
 
     // biome-ignore lint: false positive
     let activeTab: "encrypt" | "ocr" = "encrypt";
+    // biome-ignore lint: false positive
+    let isEncrypt = true;
     let fileInput: HTMLInputElement;
     let file: File | null = null;
     let password = "";
@@ -22,7 +24,7 @@
         }
     }
 
-    async function handleEncrypt() {
+    async function handleEncryptDecrypt() {
         if (!file || !password) {
             error = "Please select a file and enter a password";
             return;
@@ -36,14 +38,18 @@
             formData.append("file", file);
             formData.append("pdf_password", password);
 
-            const response = await fetch("/v1/encrypt", {
+            const endpoint = isEncrypt ? "/v1/encrypt" : "/v1/decrypt";
+            const response = await fetch(endpoint, {
                 method: "POST",
                 body: formData,
             });
 
             if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.message || "Failed to encrypt PDF");
+                throw new Error(
+                    data.message ||
+                        `Failed to ${isEncrypt ? "encrypt" : "decrypt"} PDF`,
+                );
             }
 
             // Get filename from Content-Disposition header or use a default name
@@ -52,7 +58,9 @@
             );
             const fileName = contentDisposition
                 ? contentDisposition.split("filename=")[1].replace(/["']/g, "")
-                : "encrypted.pdf";
+                : isEncrypt
+                  ? "encrypted.pdf"
+                  : "decrypted.pdf";
 
             // Create blob from response and trigger download
             const blob = await response.blob();
@@ -275,9 +283,6 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
                 PDF Tools
             </h1>
-            <p class="mt-2 text-gray-600 dark:text-gray-300">
-                Encrypt or extract text from your PDF files
-            </p>
         </div>
 
         <!-- Tab Menu -->
@@ -291,7 +296,7 @@
                     }`}
                     on:click={() => (activeTab = "encrypt")}
                 >
-                    Encrypt PDF
+                    Encrypt/Decrypt PDF
                 </button>
                 <button
                     class={`w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm cursor-pointer ${
@@ -308,10 +313,38 @@
 
         <form
             on:submit|preventDefault={activeTab === "encrypt"
-                ? handleEncrypt
+                ? handleEncryptDecrypt
                 : handleOCR}
             class="space-y-6"
         >
+            {#if activeTab === "encrypt"}
+                <!-- Encrypt/Decrypt Switch -->
+                <div class="flex items-center justify-center mb-6">
+                    <label
+                        class="inline-flex relative items-center cursor-pointer"
+                    >
+                        <input
+                            type="checkbox"
+                            class="sr-only peer"
+                            bind:checked={isEncrypt}
+                        />
+                        <div
+                            class="w-14 h-7 bg-gray-200 rounded-full peer dark:bg-gray-700
+                                           peer-checked:after:translate-x-full peer-checked:after:border-white
+                                           after:content-[''] after:absolute after:top-0.5 after:left-[2px]
+                                           after:bg-white after:border-gray-300 after:border after:rounded-full
+                                           after:h-6 after:w-6 after:transition-all dark:border-gray-600
+                                           peer-checked:bg-blue-600"
+                        ></div>
+                        <span
+                            class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300"
+                        >
+                            {isEncrypt ? "Encrypt" : "Decrypt"}
+                        </span>
+                    </label>
+                </div>
+            {/if}
+
             <div>
                 <label
                     for="file"
@@ -336,7 +369,7 @@
                     <label
                         for="pdf_password"
                         class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >Password</label
+                        >{isEncrypt ? "Set Password" : "Enter Password"}</label
                     >
                     <div class="mt-1">
                         <input
@@ -392,10 +425,16 @@
                         ></path>
                     </svg>
                     {activeTab === "encrypt"
-                        ? "Encrypting..."
+                        ? isEncrypt
+                            ? "Encrypting..."
+                            : "Decrypting..."
                         : "Processing OCR..."}
                 {:else}
-                    {activeTab === "encrypt" ? "Encrypt PDF" : "Extract Text"}
+                    {activeTab === "encrypt"
+                        ? isEncrypt
+                            ? "Encrypt PDF"
+                            : "Decrypt PDF"
+                        : "Extract Text"}
                 {/if}
             </button>
         </form>

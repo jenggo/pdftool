@@ -33,6 +33,7 @@ func router(app *fiber.App) {
 	// API
 	v1 := app.Group("/v1", authMiddleware())
 	v1.Post("/encrypt", routes.Encrypt)
+	v1.Post("/decrypt", routes.Decrypt)
 	if types.Config.S3.Enable {
 		v1.Post("/ocr", routes.OCR)
 	}

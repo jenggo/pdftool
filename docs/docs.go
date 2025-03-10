@@ -15,6 +15,76 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/decrypt": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Decrypts a password-protected PDF file",
+                "consumes": [
+                    "multipart/form-data",
+                    "application/json"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "PDF Operations"
+                ],
+                "summary": "Decrypt a PDF file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Encrypted PDF file to decrypt",
+                        "name": "file",
+                        "in": "formData"
+                    },
+                    {
+                        "description": "JSON request with base64 PDF",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password to decrypt the PDF",
+                        "name": "pdf_password",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/types.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/encrypt": {
             "post": {
                 "security": [
@@ -24,7 +94,8 @@ const docTemplate = `{
                 ],
                 "description": "Encrypts a PDF file with password protection",
                 "consumes": [
-                    "multipart/form-data"
+                    "multipart/form-data",
+                    "application/json"
                 ],
                 "produces": [
                     "application/octet-stream"
@@ -38,8 +109,15 @@ const docTemplate = `{
                         "type": "file",
                         "description": "PDF file to encrypt",
                         "name": "file",
-                        "in": "formData",
-                        "required": true
+                        "in": "formData"
+                    },
+                    {
+                        "description": "JSON request with base64 PDF",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "type": "object"
+                        }
                     },
                     {
                         "type": "string",
