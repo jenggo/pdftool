@@ -65,9 +65,6 @@
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
             PDF Tools
         </h2>
-        <p class="mt-2 text-center text-sm text-gray-600">
-            Sign in to access PDF encryption and OCR tools
-        </p>
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

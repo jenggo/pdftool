@@ -1,12 +1,31 @@
 <script lang="ts">
+    import {
+        validateFileSize,
+        getMaxFileSizeDisplay,
+    } from "../utils/fileValidation";
+
     let file: File | null = null;
     let loading = false;
     let error = "";
 
+    // For use in the template
+    const maxSizeDisplay = getMaxFileSizeDisplay();
+
     function handleFileChange(event: Event) {
         const input = event.target as HTMLInputElement;
         if (input.files && input.files.length > 0) {
-            file = input.files[0];
+            const selectedFile = input.files[0];
+
+            // Check file size
+            const sizeError = validateFileSize(selectedFile);
+            if (sizeError) {
+                error = sizeError;
+                file = null;
+                return;
+            }
+
+            file = selectedFile;
+            error = ""; // Clear previous errors
         } else {
             file = null;
         }
@@ -104,7 +123,7 @@
     <label
         for="repair-file"
         class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >PDF File</label
+        >PDF File (Max: {maxSizeDisplay})</label
     >
     <div class="mt-1">
         <input

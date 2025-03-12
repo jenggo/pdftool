@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"pdftool/server/helper"
 	"pdftool/types"
 
 	"github.com/goccy/go-json"
@@ -32,30 +33,37 @@ func OCR(ctx fiber.Ctx) error {
 	file, err := ctx.FormFile("file")
 	if err != nil {
 		log.Error().Err(err).Caller().Send()
-		return ctx.Status(fiber.StatusBadRequest).JSON(types.Response{
-			Error:   true,
-			Message: "No file uploaded",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			"No file uploaded",
+		)
 	}
 
 	if file.Header.Get("Content-Type") != "application/pdf" {
-		return ctx.Status(fiber.StatusBadRequest).JSON(types.Response{
-			Error:   true,
-			Message: "Invalid file type. Only PDF files are allowed",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			"Invalid file type. Only PDF files are allowed",
+		)
 	}
 
 	uploadedFile := slug.MakeLang(file.Filename, "en")
 	select {
 	case <-ctx.Context().Done():
-		return ctx.Status(fiber.StatusRequestTimeout).JSON(types.Response{
-			Error:   true,
-			Message: "Upload cancelled",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusRequestTimeout,
+			"Upload cancelled",
+		)
 	default:
 		if err := ctx.SaveFileToStorage(file, uploadedFile, types.Config.S3.Storage); err != nil {
 			log.Error().Caller().Err(err).Send()
-			return fmt.Errorf("failed save file to storage: %v", err)
+			return helper.SendErrorResponse(
+				ctx,
+				fiber.StatusBadRequest,
+				fmt.Sprintf("failed save file to storage: %v", err),
+			)
 		}
 	}
 
@@ -81,13 +89,21 @@ func OCR(ctx fiber.Ctx) error {
 	jsonBody, err := json.Marshal(mistralBody)
 	if err != nil {
 		log.Error().Caller().Err(err).Send()
-		return fmt.Errorf("failed to marshalling json: %v", err)
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			fmt.Sprintf("failed to marshalling json: %v", err),
+		)
 	}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", types.MistralOcrApiUrl, bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %v", err)
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			fmt.Sprintf("failed to create request: %v", err),
+		)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -96,13 +112,23 @@ func OCR(ctx fiber.Ctx) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to get response: %v", err)
+		log.Error().Err(err).Caller().Send()
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			fmt.Sprintf("failed to get response: %v", err),
+		)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
+		log.Error().Err(err).Caller().Send()
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			fmt.Sprintf("failed to read response body: %v", err),
+		)
 	}
 
 	var output struct {
@@ -123,7 +149,12 @@ func OCR(ctx fiber.Ctx) error {
 	}
 
 	if err := json.Unmarshal(body, &output); err != nil {
-		return fmt.Errorf("failed to unmarshal response body: %v", err)
+		log.Error().Err(err).Caller().Send()
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			fmt.Sprintf("failed to unmarshal response body: %v", err),
+		)
 	}
 
 	return ctx.JSON(types.Response{

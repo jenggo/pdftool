@@ -1,15 +1,9 @@
 package routes
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"pdftool/server/helper"
-	"pdftool/types"
-	"strings"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gosimple/slug"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/rs/zerolog/log"
@@ -30,50 +24,36 @@ import (
 // @Failure 500 {object} types.Response
 // @Router /v1/encrypt [post]
 func Encrypt(ctx fiber.Ctx) error {
-	req, err := helper.ProcessPDFRequest(ctx)
+	result, err := helper.ProcessPDFRequest(ctx, helper.PDFProcessOptions{
+		RequirePassword: true,
+		OutputPrefix:    "encrypted",
+	})
 	if err != nil {
-		return ctx.Status(err.Code).JSON(types.Response{
-			Error:   true,
-			Message: err.Message,
-		})
+		return helper.SendErrorResponse(ctx, err.Code, err.Message)
+	}
+	defer result.Cleanup()
+
+	if err := api.ValidateFile(result.InputPath, nil); err != nil {
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			"File is invalid or corrupted. Please upload a valid PDF.",
+		)
 	}
 
-	// Save PDF data to temp file
-	tempInput := filepath.Join("/tmp", req.Filename)
-	if err := os.WriteFile(tempInput, req.PDFdata, 0644); err != nil {
-		log.Error().Err(err).Caller().Send()
-		return ctx.Status(fiber.StatusInternalServerError).JSON(types.Response{
-			Error:   true,
-			Message: "Failed to process PDF",
-		})
-	}
-	defer os.Remove(tempInput)
-
-	ext := filepath.Ext(req.Filename)
-	nameWithoutExt := strings.TrimSuffix(req.Filename, ext)
-	outputFilename := fmt.Sprintf("encrypted_%s%s", slug.MakeLang(nameWithoutExt, "en"), ext)
-	outputPath := filepath.Join("/tmp", outputFilename)
-	defer os.Remove(outputPath)
-
-	if err := api.ValidateFile(tempInput, nil); err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(types.Response{
-			Error:   true,
-			Message: "File is invalid or corrupted. Please upload a valid PDF.",
-		})
-	}
-
-	conf := model.NewAESConfiguration(req.Password, req.Password, 256)
+	conf := model.NewAESConfiguration(result.Password, result.Password, 256)
 	conf.Permissions = model.PermissionsNone
 
-	if err := api.EncryptFile(tempInput, outputPath, conf); err != nil {
+	if err := api.EncryptFile(result.InputPath, result.OutputPath, conf); err != nil {
 		log.Error().Err(err).Caller().Send()
-		return ctx.Status(fiber.StatusInternalServerError).JSON(types.Response{
-			Error:   true,
-			Message: "Failed to encrypt PDF",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusInternalServerError,
+			helper.TransformPDFCPUErrorToResponse(err),
+		)
 	}
 
-	return ctx.Download(outputPath, outputFilename)
+	return ctx.Download(result.OutputPath, result.OutputName)
 }
 
 // @Summary Decrypt a PDF file
@@ -91,40 +71,27 @@ func Encrypt(ctx fiber.Ctx) error {
 // @Failure 500 {object} types.Response
 // @Router /v1/decrypt [post]
 func Decrypt(ctx fiber.Ctx) error {
-	req, err := helper.ProcessPDFRequest(ctx)
+	result, err := helper.ProcessPDFRequest(ctx, helper.PDFProcessOptions{
+		RequirePassword: true,
+		OutputPrefix:    "decrypted",
+	})
 	if err != nil {
-		return ctx.Status(err.Code).JSON(types.Response{
-			Error:   true,
-			Message: err.Message,
-		})
+		return helper.SendErrorResponse(ctx, err.Code, err.Message)
 	}
+	defer result.Cleanup()
 
-	// Save PDF data to temp file
-	tempInput := filepath.Join("/tmp", req.Filename)
-	if err := os.WriteFile(tempInput, req.PDFdata, 0644); err != nil {
+	conf := model.NewDefaultConfiguration()
+	conf.UserPW = result.Password
+	conf.OwnerPW = result.Password
+
+	if err := api.DecryptFile(result.InputPath, result.OutputPath, conf); err != nil {
 		log.Error().Err(err).Caller().Send()
-		return ctx.Status(fiber.StatusInternalServerError).JSON(types.Response{
-			Error:   true,
-			Message: "Failed to process PDF",
-		})
-	}
-	defer os.Remove(tempInput)
-
-	ext := filepath.Ext(req.Filename)
-	nameWithoutExt := strings.TrimSuffix(req.Filename, ext)
-	outputFilename := fmt.Sprintf("decrypted_%s%s", slug.MakeLang(nameWithoutExt, "en"), ext)
-	outputPath := filepath.Join("/tmp", outputFilename)
-	defer os.Remove(outputPath)
-
-	conf := model.NewAESConfiguration(req.Password, req.Password, 256)
-
-	if err := api.DecryptFile(tempInput, outputPath, conf); err != nil {
-		log.Error().Err(err).Caller().Send()
-		return ctx.Status(fiber.StatusInternalServerError).JSON(types.Response{
-			Error:   true,
-			Message: "Failed to decrypt PDF. Please check if the password is correct.",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusInternalServerError,
+			helper.TransformPDFCPUErrorToResponse(err),
+		)
 	}
 
-	return ctx.Download(outputPath, outputFilename)
+	return ctx.Download(result.OutputPath, result.OutputName)
 }

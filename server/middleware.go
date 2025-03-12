@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"pdftool/types"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/keyauth"
@@ -60,4 +62,31 @@ func authMiddleware() fiber.Handler {
 		},
 		ErrorHandler: errHandler,
 	})
+}
+
+func timeoutMiddleware(timeout time.Duration) fiber.Handler {
+    return func(c fiber.Ctx) error {
+        // Create a channel to signal when the request is complete
+        done := make(chan struct{})
+
+        // Create a context with a timeout
+        ctx, cancel := context.WithTimeout(c.Context(), timeout)
+        defer cancel()
+
+        go func() {
+            // Call the next handler
+            if err := c.Next(); err != nil {
+                log.Error().Err(err).Msg("Error in handler")
+            }
+            close(done)
+        }()
+
+        // Wait for either the request to complete or the timeout to expire
+        select {
+        case <-done:
+            return nil
+        case <-ctx.Done():
+            return fiber.NewError(fiber.StatusRequestTimeout, "Request timeout")
+        }
+    }
 }

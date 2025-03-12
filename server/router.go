@@ -3,6 +3,7 @@ package server
 import (
 	"pdftool/server/routes"
 	"pdftool/types"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/basicauth"
@@ -32,10 +33,10 @@ func router(app *fiber.App) {
 
 	// API
 	v1 := app.Group("/v1", authMiddleware())
-	v1.Post("/encrypt", routes.Encrypt)
-	v1.Post("/decrypt", routes.Decrypt)
-	v1.Post("/repair", routes.Repair)
+	v1.Post("/encrypt", timeoutMiddleware(2*time.Minute), routes.Encrypt)
+	v1.Post("/decrypt", timeoutMiddleware(2*time.Minute), routes.Decrypt)
+	v1.Post("/repair", timeoutMiddleware(2*time.Minute), routes.Repair)
 	if types.Config.S3.Enable {
-		v1.Post("/ocr", routes.OCR)
+		v1.Post("/ocr", timeoutMiddleware(20*time.Minute), routes.OCR)
 	}
 }

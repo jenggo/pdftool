@@ -25,7 +25,6 @@ func New() *fiber.App {
 		JSONDecoder:       json.Unmarshal,
 		ErrorHandler:      errHandler,
 		ProxyHeader:       "Cf-Connecting-Ip",
-		ReadTimeout:       20 * time.Second,
 		StreamRequestBody: true,
 	}
 

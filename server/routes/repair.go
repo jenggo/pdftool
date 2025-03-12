@@ -1,17 +1,10 @@
 package routes
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"pdftool/server/helper"
-	"pdftool/types"
-	"strings"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gosimple/slug"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/rs/zerolog/log"
 )
 
 // @Summary Repair a PDF file
@@ -28,43 +21,30 @@ import (
 // @Failure 500 {object} types.Response
 // @Router /v1/repair [post]
 func Repair(ctx fiber.Ctx) error {
-	req, err := helper.ProcessPDFRequest(ctx)
+	result, err := helper.ProcessPDFRequest(ctx, helper.PDFProcessOptions{
+		RequirePassword: false,
+		OutputPrefix:    "repaired",
+	})
 	if err != nil {
-		return ctx.Status(err.Code).JSON(types.Response{
-			Error:   true,
-			Message: err.Message,
-		})
+		return helper.SendErrorResponse(ctx, err.Code, err.Message)
+	}
+	defer result.Cleanup()
+
+	if err := api.ValidateFile(result.InputPath, nil); err == nil {
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			"File does not need to repair",
+		)
 	}
 
-	tempInput := filepath.Join("/tmp", req.Filename)
-	if err := os.WriteFile(tempInput, req.PDFdata, 0644); err != nil {
-		log.Error().Err(err).Caller().Send()
-		return ctx.Status(fiber.StatusInternalServerError).JSON(types.Response{
-			Error:   true,
-			Message: "Failed to process PDF",
-		})
-	}
-	defer os.Remove(tempInput)
-
-	ext := filepath.Ext(req.Filename)
-	nameWithoutExt := strings.TrimSuffix(req.Filename, ext)
-	outputFilename := fmt.Sprintf("repaired_%s%s", slug.MakeLang(nameWithoutExt, "en"), ext)
-	outputPath := filepath.Join("/tmp", outputFilename)
-	defer os.Remove(outputPath)
-
-	if err := api.ValidateFile(tempInput, nil); err == nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(types.Response{
-			Error:   true,
-			Message: "File does not need to repair",
-		})
+	if err := api.OptimizeFile(result.InputPath, result.OutputPath, nil); err != nil {
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			helper.TransformPDFCPUErrorToResponse(err),
+		)
 	}
 
-	if err := api.OptimizeFile(tempInput, outputPath, nil); err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(types.Response{
-			Error:   true,
-			Message: fmt.Sprintf("Failed to repair file: %v", err),
-		})
-	}
-
-	return ctx.Download(outputPath, outputFilename)
+	return ctx.Download(result.OutputPath, result.OutputName)
 }

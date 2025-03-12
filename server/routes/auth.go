@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"pdftool/server/helper"
 	"pdftool/types"
 
 	"github.com/gofiber/fiber/v3"
@@ -16,27 +17,30 @@ func Login(ctx fiber.Ctx) error {
 	}
 
 	if err := ctx.Bind().Body(&req); err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(types.Response{
-			Error:   true,
-			Message: "Invalid request",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			"Invalid request",
+		)
 	}
 
 	// Check credentials
 	if req.Username != types.Config.App.Auth.User || req.Password != types.Config.App.Auth.Pass {
-		return ctx.Status(fiber.StatusUnauthorized).JSON(types.Response{
-			Error:   true,
-			Message: "Invalid credentials",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusUnauthorized,
+			"Invalid credentials",
+		)
 	}
 
 	// Get session
 	sess, err := SessionStore.Get(ctx)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(types.Response{
-			Error:   true,
-			Message: "Session error",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusInternalServerError,
+			"Session error",
+		)
 	}
 	defer sess.Release()
 
@@ -51,10 +55,11 @@ func Login(ctx fiber.Ctx) error {
 
 	// Save session
 	if err := sess.Save(); err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(types.Response{
-			Error:   true,
-			Message: "Could not save session",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusInternalServerError,
+			"Could not save session",
+		)
 	}
 
 	return ctx.JSON(types.Response{
@@ -66,19 +71,21 @@ func Login(ctx fiber.Ctx) error {
 func CheckAuth(ctx fiber.Ctx) error {
 	sess, err := SessionStore.Get(ctx)
 	if err != nil {
-		return ctx.Status(fiber.StatusUnauthorized).JSON(types.Response{
-			Error:   true,
-			Message: "Unauthorized",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusUnauthorized,
+			"Unauthorized",
+		)
 	}
 	defer sess.Release()
 
 	authenticated := sess.Get("authenticated")
 	if authenticated == nil || !authenticated.(bool) {
-		return ctx.Status(fiber.StatusUnauthorized).JSON(types.Response{
-			Error:   true,
-			Message: "Unauthorized",
-		})
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusUnauthorized,
+			"Unauthorized",
+		)
 	}
 
 	return ctx.JSON(types.Response{

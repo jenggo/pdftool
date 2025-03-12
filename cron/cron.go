@@ -2,7 +2,6 @@ package cron
 
 import (
 	"context"
-	"math"
 	"pdftool/types"
 	"time"
 
@@ -36,7 +35,8 @@ func New() *cron.Cron {
 		return nil
 	}
 
-	_, _ = c.AddFunc("@every hour", func() {
+	_, _ = c.AddFunc("@hourly", func() {
+		log.Debug().Msg("starting hourly cleanup")
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
@@ -46,15 +46,18 @@ func New() *cron.Cron {
 				continue
 			}
 
-			lastmodified := object.LastModified.Local()
-			umur := math.Round(time.Since(lastmodified).Hours() / 24)
-
-			if umur > 1 {
-				if err := s3.RemoveObject(ctx, types.Config.S3.Bucket, object.Key, minio.RemoveObjectOptions{ForceDelete: true}); err != nil {
+			if time.Since(object.LastModified.Local()).Minutes() > 30.0 {
+				err := s3.RemoveObject(ctx, types.Config.S3.Bucket, object.Key, minio.RemoveObjectOptions{})
+				if err != nil {
 					log.Error().Err(err).Msgf("failed to remove %s", object.Key)
+					continue
 				}
+
+				log.Info().Str("object", object.Key).Msg("successfully deleted")
 			}
 		}
+
+		log.Debug().Msg("completed cleanup")
 	})
 
 	c.Start()
