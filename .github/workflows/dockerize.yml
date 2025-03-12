@@ -1,0 +1,42 @@
+name: Dockerize
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          token:  ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login GHCR
+        run: docker login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ghcr.io
+
+      - name: Sanitize/Slug
+        uses: actions/github-script@v6
+        id: repo_slug
+        with:
+          result-encoding: string
+          script: return 'ghcr.io/${{ github.repository }}'.toLowerCase()
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.repo_slug.outputs.result }}:${{ github.ref_name }}
+
