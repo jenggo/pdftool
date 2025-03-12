@@ -20,12 +20,13 @@ var sessionStore *session.Store
 
 func New() *fiber.App {
 	appCfg := fiber.Config{
-		AppName:      types.AppName,
-		JSONEncoder:  json.Marshal,
-		JSONDecoder:  json.Unmarshal,
-		ErrorHandler: errHandler,
-		ProxyHeader:  "Cf-Connecting-Ip",
-		ReadTimeout:  10 * time.Second,
+		AppName:           types.AppName,
+		JSONEncoder:       json.Marshal,
+		JSONDecoder:       json.Unmarshal,
+		ErrorHandler:      errHandler,
+		ProxyHeader:       "Cf-Connecting-Ip",
+		ReadTimeout:       20 * time.Second,
+		StreamRequestBody: true,
 	}
 
 	if !types.Config.App.Cloudflare {
