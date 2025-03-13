@@ -47,6 +47,11 @@
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
     }
+
+    function copyToClipboard() {
+        const text = pages[currentPage]?.html || "";
+        navigator.clipboard.writeText(text);
+    }
 </script>
 
 {#if showModal}
@@ -132,14 +137,21 @@
                     </button>
                 </div>
 
-                <!-- Download button -->
-                <div class="mt-3 flex justify-end">
+                <!-- Download and Copy buttons -->
+                <div class="mt-3 flex justify-between">
                     <button
                         type="button"
                         class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         on:click={downloadAllPages}
                     >
                         Download All Pages
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        on:click={copyToClipboard}
+                    >
+                        Copy to Clipboard
                     </button>
                 </div>
             </div>

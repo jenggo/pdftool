@@ -13,3 +13,13 @@ html.dark {
 html.dark body {
     @apply bg-gray-900 text-white;
 }
+
+.flex-col li button {
+    @apply block w-full text-left;
+    /* Make buttons full width in vertical mode */
+}
+
+.flex-col li button:hover {
+    @apply bg-gray-100 dark:bg-gray-600;
+    /* Add a hover effect */
+}

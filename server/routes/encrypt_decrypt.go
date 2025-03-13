@@ -80,6 +80,14 @@ func Decrypt(ctx fiber.Ctx) error {
 	}
 	defer result.Cleanup()
 
+	if err := api.ValidateFile(result.InputPath, nil); err != nil {
+		return helper.SendErrorResponse(
+			ctx,
+			fiber.StatusBadRequest,
+			"File is invalid or corrupted. Please upload a valid PDF.",
+		)
+	}
+
 	conf := model.NewDefaultConfiguration()
 	conf.UserPW = result.Password
 	conf.OwnerPW = result.Password

@@ -7,6 +7,7 @@
     let error = "";
     let showModal = false;
     let pages: { html: string; index: number }[] = [];
+    let progress = 0;
 
     function handleFileChange(event: Event) {
         const input = event.target as HTMLInputElement;
@@ -26,6 +27,7 @@
         loading = true;
         error = "";
         pages = [];
+        progress = 0;
 
         try {
             const formData = new FormData();
@@ -42,12 +44,21 @@
                 throw new Error(result.message || "Failed to process OCR");
             }
 
+            const totalPages = result.data.pages.length;
+
             pages = await Promise.all(
                 result.data.pages.map(
-                    async (page: { markdown: string; index: number }) => ({
-                        html: await parse(page.markdown),
-                        index: page.index,
-                    }),
+                    async (
+                        page: { markdown: string; index: number },
+                        index: number,
+                    ) => {
+                        const html = await parse(page.markdown);
+                        progress = Math.round(((index + 1) / totalPages) * 100); // Update progress
+                        return {
+                            html: html,
+                            index: page.index,
+                        };
+                    },
                 ),
             );
 
@@ -60,6 +71,7 @@
                     : "An unexpected error occurred";
         } finally {
             loading = false;
+            progress = 0;
         }
     }
 
@@ -68,67 +80,77 @@
     }
 </script>
 
-<div>
-    <label
-        for="ocr-file"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >PDF File</label
-    >
-    <div class="mt-1">
-        <input
-            type="file"
-            id="ocr-file"
-            accept=".pdf"
-            on:change={handleFileChange}
-            class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
-            required
-        />
-    </div>
-</div>
+<div
+    class="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md"
+>
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">
+        Extract Text (OCR)
+    </h2>
 
-{#if error}
-    <div class="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
-        <div class="flex">
-            <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
-                    {error}
-                </h3>
-            </div>
+    <div>
+        <label
+            for="ocr-file"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >PDF File</label
+        >
+        <div class="mt-1">
+            <input
+                type="file"
+                id="ocr-file"
+                accept=".pdf"
+                on:change={handleFileChange}
+                class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
+                required
+            />
         </div>
     </div>
-{/if}
 
-<button
-    type="button"
-    disabled={loading}
-    on:click={handleOCR}
-    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
->
-    {#if loading}
-        <svg
-            class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-        >
-            <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-            ></circle>
-            <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-        </svg>
-        Processing OCR...
-    {:else}
-        Extract Text
+    {#if error}
+        <div class="rounded-md bg-red-50 dark:bg-red-900/50 p-4 mt-4">
+            <div class="flex">
+                <div class="ml-3">
+                    <h3
+                        class="text-sm font-medium text-red-800 dark:text-red-200"
+                    >
+                        {error}
+                    </h3>
+                </div>
+            </div>
+        </div>
     {/if}
-</button>
 
-<OcrResultModal {pages} {showModal} {closeModal} />
+    <button
+        type="button"
+        disabled={loading || !file}
+        on:click={handleOCR}
+        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed mt-4 cursor-pointer"
+    >
+        {#if loading}
+            <svg
+                class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+            >
+                <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                ></circle>
+                <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+            </svg>
+            Processing OCR... ({progress}%)
+        {:else}
+            Extract Text
+        {/if}
+    </button>
+
+    <OcrResultModal {pages} {showModal} {closeModal} />
+</div>
