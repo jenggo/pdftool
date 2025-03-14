@@ -7,7 +7,6 @@
     let error = "";
     let showModal = false;
     let pages: { html: string; index: number }[] = [];
-    let progress = 0;
 
     function handleFileChange(event: Event) {
         const input = event.target as HTMLInputElement;
@@ -27,7 +26,6 @@
         loading = true;
         error = "";
         pages = [];
-        progress = 0;
 
         try {
             const formData = new FormData();
@@ -53,7 +51,6 @@
                         index: number,
                     ) => {
                         const html = await parse(page.markdown);
-                        progress = Math.round(((index + 1) / totalPages) * 100); // Update progress
                         return {
                             html: html,
                             index: page.index,
@@ -71,7 +68,6 @@
                     : "An unexpected error occurred";
         } finally {
             loading = false;
-            progress = 0;
         }
     }
 
@@ -146,7 +142,7 @@
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
             </svg>
-            Processing OCR... ({progress}%)
+            Processing OCR..)
         {:else}
             Extract Text
         {/if}
