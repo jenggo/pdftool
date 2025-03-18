@@ -4,7 +4,7 @@ import "github.com/gofiber/storage/minio"
 
 const (
 	AppName          string = "pdfTool"
-	AppVersion       string = "0.0.1"
+	AppVersion       string = "0.0.1-encryptOnly"
 	MistralOcrApiUrl string = "https://api.mistral.ai/v1/ocr"
 )
 

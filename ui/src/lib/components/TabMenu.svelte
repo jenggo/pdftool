@@ -22,7 +22,7 @@
                 Encrypt/Decrypt
             </button>
         </li>
-        <li>
+        <!-- <li>
             <button
                 class={`inline-block py-4 px-4 text-sm font-medium text-center rounded-t-lg border-b-2 ${
                     activeTab === "repair"
@@ -57,6 +57,6 @@
             >
                 Optimize
             </button>
-        </li>
+        </li> -->
     </ul>
 </nav>

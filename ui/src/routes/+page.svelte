@@ -8,7 +8,8 @@
     let activeTab: "encrypt" | "ocr" | "repair" | "optimize" = "encrypt";
 
     function setActiveTab(tab: "encrypt" | "ocr" | "repair" | "optimize") {
-        activeTab = tab;
+        // activeTab = tab;
+        activeTab = "encrypt";
     }
 </script>
 
@@ -28,12 +29,12 @@
             <div class="p-4 sm:p-6">
                 {#if activeTab === "encrypt"}
                     <EncryptDecrypt />
-                {:else if activeTab === "repair"}
+                    <!-- {:else if activeTab === "repair"}
                     <RepairPdf />
                 {:else if activeTab === "ocr"}
                     <OcrPdf />
                 {:else if activeTab === "optimize"}
-                    <OptimizePdf />
+                    <OptimizePdf /> -->
                 {/if}
             </div>
         </div>

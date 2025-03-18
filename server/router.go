@@ -30,8 +30,8 @@ func router(app *fiber.App) {
 	v1 := app.Group("/v1", authMiddleware())
 	v1.Post("/encrypt", timeoutMiddleware(2*time.Minute), routes.Encrypt)
 	v1.Post("/decrypt", timeoutMiddleware(2*time.Minute), routes.Decrypt)
-	v1.Post("/repair", timeoutMiddleware(2*time.Minute), routes.Repair)
-	v1.Post("/optimize", routes.Optimize)
+	// v1.Post("/repair", timeoutMiddleware(2*time.Minute), routes.Repair)
+	// v1.Post("/optimize", routes.Optimize)
 	if types.Config.S3.Enable {
 		v1.Post("/ocr", timeoutMiddleware(20*time.Minute), routes.OCR)
 	}
