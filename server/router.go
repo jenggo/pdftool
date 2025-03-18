@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/basicauth"
 	"github.com/gofiber/fiber/v3/middleware/static"
 	swagger "github.com/jenggo/gofiber-swagger"
 )
@@ -16,11 +15,7 @@ func router(app *fiber.App) {
 
 	// Swagger
 	if types.Config.Swagger.Enable {
-		app.Get(types.Config.Swagger.Path+"/*", basicauth.New(basicauth.Config{
-			Users: map[string]string{
-				types.Config.App.Auth.User: types.Config.App.Auth.Pass,
-			},
-		}), swagger.HandlerDefault)
+		app.Get(types.Config.Swagger.Path+"/*", swagger.HandlerDefault)
 	}
 
 	// UI
